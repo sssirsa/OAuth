@@ -6,7 +6,6 @@ provider:
   stage: dev
   region: us-east-1
 
-
 functions:
   verify-token:
     handler: auth/VerifyToken.auth
@@ -39,6 +38,42 @@ functions:
          path: users/
          method: get
          cors: true
+  person-create:
+    handler: person/PersonHandler.create # point to exported create function in handler.js
+    events:
+      - http:
+          path: person/ # path domain.name.com/dev/person/create
+          method: post
+          cors: true
+  person-getAll:
+    handler: person/PersonHandler.getAll
+    events:
+      - http:
+          path: person/ # path domain.name.com/dev/person
+          method: get
+          cors: true
+  person-getOne:
+    handler: person/PersonHandler.getOne
+    events:
+      - http:
+          path: person/{id} # path domain.name.com/dev/person/1
+          method: get
+          cors: true
+  person-update:
+    handler: person/PersonHandler.Update
+    events:
+      - http:
+          path: person/{id} # path domain.name.com/dev/person/1/update
+          method: put
+          cors: true
+  person-delete:
+    handler: person/PersonHandler.Delete
+    events:
+      - http:
+          path: person/{id} # path domain.name.com/dev/person/1/delete
+          method: delete
+          cors: true
+  
 
 plugins:
   - serverless-offline #adding the plugin to be able to run offline emulation  
