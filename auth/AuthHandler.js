@@ -1,6 +1,7 @@
 // AuthHandler.js 
 
-const connecttToDatabase = require('../db');
+const connectToDatabase = require('../db');
+require('dotenv').config({path: './variables.env'});
 const User = require('../user/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs-then');
@@ -13,7 +14,7 @@ const bcrypt = require('bcryptjs-then');
     context.callbackWaitsForEmptyEventLoop = false;
     return connectToDatabase()
      .then(() =>
-        this.register(JSON.parse(event.body))
+        register(JSON.parse(event.body))
      )
      .then(session => ({
          statusCode: 200,
@@ -51,29 +52,29 @@ const bcrypt = require('bcryptjs-then');
  * Functions Me
  */
 
- module.exports.me = (event, context) => {
-     context.callbackWaitsForEmptyEventLoop = false;
-     return connectToDatabase()
-       .then(()=>
-        me(even.requestContext.authorizer.principalId) //the decoded.id from the VerifyToken auth will be passed along as the principald under the authorizer
-       )
-       .then(session => ({
-           statusCode: 200,
-           bosy: JSON.stringify(session)
-       }))
-       .catch(err => ({
-           statusCode: err.statusCode || 500,
-           headers: { 'Content-Type': 'text/plain'},
-           body: { stack: err.stack, message: err.message}
-       }));
- };
+module.exports.me = (event, context) => {
+    context.callbackWaitsForEmptyEventLoop = false;
+    return connectToDatabase()
+      .then(() =>
+        me(event.requestContext.authorizer.principalId) // the decoded.id from the VerifyToken.auth will be passed along as the principalId under the authorizer
+      )
+      .then(session => ({
+        statusCode: 200,
+        body: JSON.stringify(session)
+      }))
+      .catch(err => ({
+        statusCode: err.statusCode || 500,
+        headers: { 'Content-Type': 'text/plain' },
+        body: { stack: err.stack, message: err.message }
+      }));
+  };
 
  /**
   * Helpers Register
   */
  
   function signToken(id){
-     return jwt.sign({id: id}, process.env.JWT_SECRET, {
+     return jwt.sign({id: id}, 'reallystrongsecret' , {
          expiresIn: 86400 // expires in 24 hours
      });
  }
@@ -87,14 +88,14 @@ const bcrypt = require('bcryptjs-then');
      }
 
      if(
-         !(eventBody.name &&
-            eventBody.name.length > 5 &&
-            typeof eventBody.name === 'string')
+         !(eventBody.username &&
+            eventBody.username.length > 5 &&
+            typeof eventBody.username === 'string')
      )return Promise.reject(new Error('Username error: Username needs to longer than 5 characters'));
  
      if(
          !(eventBody.email &&
-            typeof eventBody.name === 'string')
+            typeof eventBody.email === 'string')
      ) return Promise.reject(new Error('Email error. Email mmust have valid characters.'));
     
   return Promise.resolve();
@@ -110,6 +111,13 @@ function register(eventBody) {
             ? Promise.reject(new Error('User with that email exists.'))
             : bcrypt.hash(eventBody.password, 8) //hash the pass
         )
+        .then(hash =>
+            User.create({ username: eventBody.username,
+                          email: eventBody.email, 
+                          password: hash , 
+                          is_active: eventBody.is_active}) 
+            // create the new user
+          )        
         .then(user => ({ auth: true, token: signToken(user._id)}));
         // sign the token and send it back
 }
